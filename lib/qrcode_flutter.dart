@@ -6,6 +6,12 @@ import 'package:flutter/widgets.dart';
 typedef CaptureCallback(String data);
 
 enum CaptureTorchMode { on, off }
+enum QrResultType { success, failed }
+
+class QrResult{
+  QrResultType type;
+  List<String> datas;
+}
 
 class QRCaptureController {
   MethodChannel _methodChannel;
@@ -45,11 +51,19 @@ class QRCaptureController {
     _methodChannel?.invokeMethod('setTorchMode', isOn);
   }
 
-  static Future<List<String>> getQrCodeByImagePath(String path) async {
+  static Future<QrResult> getQrCodeByImagePath(String path) async {
     var _methodChannel = MethodChannel('plugins/qr_capture/method');
-    var qrResult =
-        await _methodChannel?.invokeMethod("getQrCodeByImagePath", path);
-    return List<String>.from(qrResult);
+    var qrResult = await _methodChannel?.invokeMethod("getQrCodeByImagePath", path);
+    var list = List<String>.from(qrResult);
+    if (list.isNotEmpty){
+      return QrResult()
+        ..type = QrResultType.success
+        ..datas = List<String>.from(qrResult);
+    } else {
+      return QrResult()
+        ..type = QrResultType.failed
+        ..datas = ['error QRCode'];
+    }
   }
 }
 

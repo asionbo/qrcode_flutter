@@ -44,11 +44,19 @@ class _MyAppState extends State<MyApp> with TickerProviderStateMixin {
               onPressed: () async {
                 PickedFile image =
                     await ImagePicker().getImage(source: ImageSource.gallery);
-                var qrCodeResult =
-                    await QRCaptureController.getQrCodeByImagePath(image.path);
-                setState(() {
-                  _captureText = qrCodeResult.join('\n');
-                });
+                if (image != null){
+                  var qrCodeResult =
+                  await QRCaptureController.getQrCodeByImagePath(image.path);
+                  if (qrCodeResult.type == QrResultType.success){
+                    setState(() {
+                      _captureText = qrCodeResult.datas.join('\n');
+                    });
+                  } else {
+                    setState(() {
+                      _captureText = '识别失败了';
+                    });
+                  }
+                }
               },
               child: Text('photoAlbum', style: TextStyle(color: Colors.white)),
             ),
