@@ -162,7 +162,7 @@ class QRCaptureView(id: Int) :
     }
 
     override fun dispose() {
-        FlutterRegister.clear()
+        barcodeView?.pause()
         cameraPermissionContinuation = null
         barcodeView = null
         channel?.setMethodCallHandler(null)
