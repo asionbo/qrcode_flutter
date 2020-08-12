@@ -11,10 +11,14 @@ class QRCaptureController {
   MethodChannel _methodChannel;
   CaptureCallback _capture;
 
-  QRCaptureController();
+  /// set barcode decodeContinuous or decodeSingle
+  bool single;
+
+  QRCaptureController({this.single = false});
 
   void _onPlatformViewCreated(int id) {
     _methodChannel = MethodChannel('plugins/qr_capture/method_$id');
+    _methodChannel.invokeMethod('singleScan', single);
     _methodChannel.setMethodCallHandler((MethodCall call) async {
       if (call.method == 'onCaptured') {
         if (_capture != null && call.arguments != null) {

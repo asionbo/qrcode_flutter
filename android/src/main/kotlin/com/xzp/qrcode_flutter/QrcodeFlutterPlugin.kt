@@ -1,5 +1,6 @@
 package com.xzp.qrcode_flutter
 
+import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import com.google.zxing.BinaryBitmap
 import com.google.zxing.DecodeHintType
@@ -9,16 +10,14 @@ import com.google.zxing.qrcode.QRCodeReader
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
-import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
-import io.flutter.plugin.common.PluginRegistry.Registrar
 import java.lang.ref.WeakReference
 import java.util.*
 
 class QrcodeFlutterPlugin : MethodChannel.MethodCallHandler, FlutterPlugin, ActivityAware {
     override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
-        when (call?.method) {
+        when (call.method) {
             "getQrCodeByImagePath" -> {
                 val path = call.arguments as String
                 // DecodeHintType 和EncodeHintType
@@ -30,18 +29,21 @@ class QrcodeFlutterPlugin : MethodChannel.MethodCallHandler, FlutterPlugin, Acti
                 var sampleSize = (options.outWidth / fixWidth + options.outHeight / fixWidth) / 2
                 if (sampleSize < 0) {
                     sampleSize = 1
+                } else if (sampleSize > 4) {
+                    sampleSize = 4
                 }
                 options.inSampleSize = sampleSize
-                var bitmap = BitmapFactory.decodeFile(path, options)
+                options.inPreferredConfig = Bitmap.Config.RGB_565
+                val bitmap = BitmapFactory.decodeFile(path, options)
                 val width = bitmap.width
                 val height = bitmap.height
                 val pixels = IntArray(width * height)
                 bitmap.getPixels(pixels, 0, width, 0, 0, width, height)
-                var source = RGBLuminanceSource(width, height, pixels)
-                var hints: Hashtable<DecodeHintType, String> = Hashtable<DecodeHintType, String>()
-                hints.put(DecodeHintType.CHARACTER_SET, "utf-8"); // 设置二维码内容的编码
+                val source = RGBLuminanceSource(width, height, pixels)
+                val hints: Hashtable<DecodeHintType, String> = Hashtable()
+                hints[DecodeHintType.CHARACTER_SET] = "utf-8" // 设置二维码内容的编码
                 try {
-                    var result1 = QRCodeReader().decode(BinaryBitmap(HybridBinarizer(source)), hints)
+                    val result1 = QRCodeReader().decode(BinaryBitmap(HybridBinarizer(source)), hints)
                     result.success(listOf(result1.text))
                 } catch (e: Exception) {
                     // nothing qrcode found
@@ -78,23 +80,14 @@ class QrcodeFlutterPlugin : MethodChannel.MethodCallHandler, FlutterPlugin, Acti
     }
 
     companion object {
-        var pluginBinding:FlutterPlugin.FlutterPluginBinding ?= null;
-        @JvmStatic
-        fun registerWith(registrar: Registrar) {
-            FlutterRegister.registrar = registrar
-            FlutterRegister.messenger = registrar.messenger()
-            FlutterRegister.activity = WeakReference(registrar.activity())
-            registrar.platformViewRegistry().registerViewFactory("plugins/qr_capture_view", QRCaptureViewFactory())
-            var channel = MethodChannel(registrar.messenger(), "plugins/qr_capture/method")
-            channel.setMethodCallHandler(QrcodeFlutterPlugin())
-        }
-        //v2 embedding
+        var pluginBinding:FlutterPlugin.FlutterPluginBinding ?= null
+        ///v2 embedding
         fun register(binding: ActivityPluginBinding) {
             FlutterRegister.activityBinding = binding
             FlutterRegister.messenger=pluginBinding?.binaryMessenger
             FlutterRegister.activity= WeakReference(binding.activity)
             pluginBinding?.platformViewRegistry?.registerViewFactory("plugins/qr_capture_view", QRCaptureViewFactory())
-            var channel = MethodChannel(pluginBinding?.binaryMessenger, "plugins/qr_capture/method")
+            val channel = MethodChannel(pluginBinding?.binaryMessenger, "plugins/qr_capture/method")
             channel.setMethodCallHandler(QrcodeFlutterPlugin())
         }
     }

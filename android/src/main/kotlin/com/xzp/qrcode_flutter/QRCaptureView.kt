@@ -21,25 +21,42 @@ import io.flutter.plugin.platform.PlatformView
 class QRCaptureView(id: Int) :
         PlatformView, MethodCallHandler {
     override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
-        when (call?.method) {
+        when (call.method) {
+            "singleScan" -> {
+                val single = call.arguments as Boolean
+                if (single){
+                    barcodeView?.decodeSingle(
+                            object : BarcodeCallback {
+                                override fun barcodeResult(result: BarcodeResult?) {
+                                    channel.invokeMethod("onCaptured", result?.text)
+                                }
+
+                                override fun possibleResultPoints(resultPoints: MutableList<ResultPoint>?) {}
+
+                            }
+                    )
+                } else {
+                    barcodeView?.decodeContinuous(
+                            object : BarcodeCallback {
+                                override fun barcodeResult(result: BarcodeResult) {
+                                    channel.invokeMethod("onCaptured", result.text)
+                                }
+
+                                override fun possibleResultPoints(resultPoints: List<ResultPoint>) {}
+                            }
+                    )
+                }
+                barcodeView?.resume()
+            }
             "checkAndRequestPermission" -> {
                 checkAndRequestPermission(result)
             }
-        }
-
-        when (call?.method) {
             "resume" -> {
                 resume()
             }
-        }
-
-        when (call?.method) {
             "pause" -> {
                 pause()
             }
-        }
-
-        when (call?.method) {
             "setTorchMode" -> {
                 val isOn = call.arguments as Boolean
                 barcodeView?.setTorch(isOn)
@@ -104,17 +121,6 @@ class QRCaptureView(id: Int) :
         checkAndRequestPermission(null)
         val barcode = BarcodeView(FlutterRegister.getActivity())
         this.barcodeView = barcode
-        barcode.decodeContinuous(
-                object : BarcodeCallback {
-                    override fun barcodeResult(result: BarcodeResult) {
-                        channel.invokeMethod("onCaptured", result.text)
-                    }
-
-                    override fun possibleResultPoints(resultPoints: List<ResultPoint>) {}
-                }
-        )
-
-        barcode.resume()
 
         FlutterRegister.getActivity()?.application?.registerActivityLifecycleCallbacks(
                 object : Application.ActivityLifecycleCallbacks {
