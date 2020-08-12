@@ -56,6 +56,8 @@ class QrcodeFlutterPlugin : MethodChannel.MethodCallHandler, FlutterPlugin, Acti
 
     override fun onDetachedFromActivity() {
         FlutterRegister.clear()
+        channel?.setMethodCallHandler(null)
+        channel = null
     }
 
     override fun onReattachedToActivityForConfigChanges(binding: ActivityPluginBinding) {
@@ -81,14 +83,15 @@ class QrcodeFlutterPlugin : MethodChannel.MethodCallHandler, FlutterPlugin, Acti
 
     companion object {
         var pluginBinding:FlutterPlugin.FlutterPluginBinding ?= null
+        var channel : MethodChannel? = null
         ///v2 embedding
         fun register(binding: ActivityPluginBinding) {
             FlutterRegister.activityBinding = binding
             FlutterRegister.messenger=pluginBinding?.binaryMessenger
             FlutterRegister.activity= WeakReference(binding.activity)
             pluginBinding?.platformViewRegistry?.registerViewFactory("plugins/qr_capture_view", QRCaptureViewFactory())
-            val channel = MethodChannel(pluginBinding?.binaryMessenger, "plugins/qr_capture/method")
-            channel.setMethodCallHandler(QrcodeFlutterPlugin())
+            channel = MethodChannel(pluginBinding?.binaryMessenger, "plugins/qr_capture/method")
+            channel?.setMethodCallHandler(QrcodeFlutterPlugin())
         }
     }
 }

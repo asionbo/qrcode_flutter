@@ -28,7 +28,7 @@ class QRCaptureView(id: Int) :
                     barcodeView?.decodeSingle(
                             object : BarcodeCallback {
                                 override fun barcodeResult(result: BarcodeResult?) {
-                                    channel.invokeMethod("onCaptured", result?.text)
+                                    channel?.invokeMethod("onCaptured", result?.text)
                                 }
 
                                 override fun possibleResultPoints(resultPoints: MutableList<ResultPoint>?) {}
@@ -39,7 +39,7 @@ class QRCaptureView(id: Int) :
                     barcodeView?.decodeContinuous(
                             object : BarcodeCallback {
                                 override fun barcodeResult(result: BarcodeResult) {
-                                    channel.invokeMethod("onCaptured", result.text)
+                                    channel?.invokeMethod("onCaptured", result.text)
                                 }
 
                                 override fun possibleResultPoints(resultPoints: List<ResultPoint>) {}
@@ -111,13 +111,13 @@ class QRCaptureView(id: Int) :
     var barcodeView: BarcodeView? = null
     private val activity = FlutterRegister.getActivity()
     var cameraPermissionContinuation: Runnable? = null
-    var requestingPermission = false
-    val channel: MethodChannel
+    private var requestingPermission = false
+    var channel: MethodChannel?
 
     init {
         FlutterRegister.addRequestPermissionsResultListener(CameraRequestPermissionsListener())
         channel = MethodChannel(FlutterRegister.messenger, "plugins/qr_capture/method_$id")
-        channel.setMethodCallHandler(this)
+        channel?.setMethodCallHandler(this)
         checkAndRequestPermission(null)
         val barcode = BarcodeView(FlutterRegister.getActivity())
         this.barcodeView = barcode
@@ -140,6 +140,9 @@ class QRCaptureView(id: Int) :
                     }
 
                     override fun onActivityDestroyed(p0: Activity?) {
+                        if (p0 == FlutterRegister.getActivity()) {
+                            FlutterRegister.getActivity()?.application?.unregisterActivityLifecycleCallbacks(this)
+                        }
                     }
 
                     override fun onActivitySaveInstanceState(p0: Activity?, p1: Bundle?) {
@@ -159,8 +162,11 @@ class QRCaptureView(id: Int) :
     }
 
     override fun dispose() {
-        barcodeView?.pause()
+        FlutterRegister.clear()
+        cameraPermissionContinuation = null
         barcodeView = null
+        channel?.setMethodCallHandler(null)
+        channel = null
     }
 
     private inner class CameraRequestPermissionsListener : PluginRegistry.RequestPermissionsResultListener {
